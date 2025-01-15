@@ -17,7 +17,7 @@ jobs:
     name: Stack macOS
     uses: ./.github/workflows/stack.yml
     with:
-      os: macos-12
+      os: macos-latest
 
   stack-windows:
     name: Stack Windows
@@ -36,4 +36,4 @@ jobs:
     name: Nix macOS
     uses: ./.github/workflows/nix.yml
     with:
-      os: macos-12
+      os: macos-latest
