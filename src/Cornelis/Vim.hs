@@ -7,6 +7,7 @@ import           Control.Lens ((%~), _head, _last, (&))
 import           Cornelis.Offsets
 import           Cornelis.Types
 import           Cornelis.Utils (objectToInt, savingCurrentPosition, savingCurrentWindow)
+import           Data.Either.Combinators (rightToMaybe)
 import           Data.Foldable (toList)
 import           Data.Int
 import qualified Data.Map as M
@@ -138,6 +139,11 @@ getExtmarkIntervalById ns b (Extmark x) = do
           Just ecol  = toZ $ details M.! ObjectString "end_col"
       fmap Just $ traverse (unvimify b) $ Interval (Pos sline scol) $ Pos eline ecol
     _ -> pure Nothing
+
+getreg :: Text -> Neovim env (Maybe Text)
+getreg reg
+    = (rightToMaybe . fromObject)
+    <$> (vim_call_function "getreg" $ V.singleton $ toObject reg)
 
 ------------------------------------------------------------------------------
 -- | Awful function that does the motion in visual mode and gives you back

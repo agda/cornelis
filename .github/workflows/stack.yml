@@ -96,5 +96,5 @@ jobs:
             if [ $RUNNER_OS = "Windows" ]; then
              stack test
             else
-              nix shell nixpkgs#agda nixpkgs#neovim -c stack test
+              nix shell -c stack test
             fi

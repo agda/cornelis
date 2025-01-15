@@ -4,7 +4,6 @@
 module TestSpec where
 
 import           Control.Concurrent (threadDelay)
-import           Control.Monad (void)
 import           Cornelis.Subscripts (decNextDigitSeq, incNextDigitSeq)
 import           Cornelis.Types
 import           Cornelis.Types.Agda (Rewrite (..))
@@ -25,8 +24,11 @@ broken :: String -> SpecWith a -> SpecWith a
 broken = before_ . pendingWith
 
 spec :: Spec
-spec = focus $ do
+spec = focus $ parallel $ do
   let timeout = Seconds 60
+
+  executableSpec "agda"
+  executableSpec "nvim"
 
   it "should load read-only file" $ do
     withVim timeout $ \w b -> do
@@ -41,12 +43,12 @@ spec = focus $ do
     goto w 11 8
     refine
 
-  broken "Times out in CI for unknown reasons" $ diffSpec "should support helper functions" timeout "test/Hello.agda"
-      [ Swap "" "help_me : Unit"] $ \w _ -> do
+  vimSpec "should support helper functions" timeout "test/Hello.agda" $ \w _ -> do
     goto w 11 8
     helperFunc Normalised "help_me"
     liftIO $ threadDelay 5e5
-    void $ vim_command "normal! G\"\"p"
+    reg <- getreg "\""
+    liftIO $ reg `shouldBe` Just "help_me : Unit"
 
   diffSpec "should case split (unicode lambda)" timeout "test/Hello.agda"
       [ Add                       "slap = λ { true → {! !}"

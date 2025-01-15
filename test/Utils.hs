@@ -19,9 +19,11 @@ import           Neovim
 import           Neovim.API.Text
 import           Neovim.Test
 import           Plugin
+import           System.Exit (ExitCode(..))
 import           System.FilePath (takeBaseName)
 import           System.IO (hFlush, hPutStr)
 import           System.IO.Temp (withSystemTempFile)
+import           System.Process (rawSystem)
 import           Test.Hspec hiding (after, before)
 
 
@@ -64,10 +66,12 @@ intervention b d m = do
   d' <- differing b m
   liftIO $ d' `shouldBe` d
 
+withNeovimEmbedded :: Seconds -> Neovim () a -> IO ()
+withNeovimEmbedded secs = runInEmbeddedNeovim' def{cancelAfter = secs}
+
 withVim :: Seconds -> (Window -> Buffer -> Neovim () ()) -> IO ()
 withVim secs m = do
-  let withNeovimEmbedded f = testWithEmbeddedNeovim f secs ()
-  withNeovimEmbedded Nothing $ do
+  withNeovimEmbedded secs $ do
     b <- nvim_create_buf False False
     w <- vim_get_current_window
     nvim_win_set_buf w b
@@ -92,22 +96,28 @@ vimSpec
     -> (Window -> Buffer -> Neovim CornelisEnv ())
     -> Spec
 vimSpec name secs fp m = do
-  let withNeovimEmbedded f = testWithEmbeddedNeovim f secs ()
   it name $ do
     withSystemTempFile "test.agda" $ \fp' h -> do
       hPutStr h $ "module " <> takeBaseName fp' <> " where\n"
       hPutStr h . unlines . tail . lines =<< readFile fp
       hFlush h
-      withNeovimEmbedded Nothing $ do
+      withNeovimEmbedded secs $ do
         env <- cornelisInit
         withLocalEnv env $ do
-          vim_command $ "edit " <> T.pack fp'
+          nvim_command $ "noswap edit " <> T.pack fp'
           liftIO $ threadDelay 1e6
           w <- vim_get_current_window
           b <- nvim_win_get_buf w
           load
           liftIO $ threadDelay 5e6
           m w b
+
+-- | Assert that 'bin' is executable.
+executableSpec :: String -> Spec
+executableSpec bin = describe bin $ do
+  it "is executable" $ do
+    exit_code <- rawSystem bin ["--version"]
+    exit_code `shouldBe` ExitSuccess
 
 goto :: Window -> Int -> Int -> Neovim env ()
 goto w row col = setWindowCursor w $ Pos (toOneIndexed row) (toOneIndexed col)

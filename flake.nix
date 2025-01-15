@@ -22,11 +22,16 @@
           haskell = prev.haskell // {
             packageOverrides = final.lib.composeExtensions
               prev.haskell.packageOverrides
-              (hfinal: hprev: {
+              (hfinal: hprev: let
+                inherit (final.haskell.lib.compose) enableSeparateBinOutput addTestToolDepends;
+                inherit (final.lib) pipe;
+              in {
                 # Put binaries into separate output "bin" to reduce closure size.
                 # https://nixos.org/manual/nixpkgs/stable/#haskell-packaging-helpers
-                ${name} = final.haskell.lib.enableSeparateBinOutput
-                  (hfinal.callCabal2nix name ./. { });
+                ${name} = pipe (hfinal.callCabal2nix name ./. { }) [
+                  enableSeparateBinOutput
+                  (addTestToolDepends [ final.agda final.neovim ])
+                ];
               });
           };
 
@@ -53,7 +58,7 @@
         };
         agda = pkgs.agda.withPackages (p: [ p.standard-library ]);
       in
-      {
+      rec {
         packages = {
           inherit agda;
           ${name} = pkgs.${name};
@@ -65,6 +70,15 @@
           (v: { name = "${name}-${v}"; value = pkgs.haskell.packages.${v}.${name}; })
           ghcVersions
         );
+        defaultPackage = packages.default;
+        app = {
+          cornelis = inputs.flake-utils.lib.mkApp {
+            inherit name; drv = packages.default;
+          };
+          default = app.cornelis;
+        };
+        defaultApp = app.default;
+        devShells.default = pkgs.callPackage ./nix/dev-shells.nix { };
       }
     );
 }
