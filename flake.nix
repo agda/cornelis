@@ -65,6 +65,9 @@
           (v: { name = "${name}-${v}"; value = pkgs.haskell.packages.${v}.${name}; })
           ghcVersions
         );
+        devShells.default = pkgs.haskellPackages.shellFor {
+          packages = _: [self.packages.${system}.${name}];
+        };
       }
     );
 }
