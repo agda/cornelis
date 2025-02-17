@@ -132,8 +132,8 @@ doRestart _ = do
 doAbort :: CommandArguments -> Neovim CornelisEnv ()
 doAbort _ = withAgda $ withCurrentBuffer $ getAgda >=> runIOTCM Cmd_abort
 
-normalizationMode :: Neovim env Rewrite
-normalizationMode = pure HeadNormal
+normalizationMode :: Neovim CornelisEnv Rewrite
+normalizationMode = asks (cc_rewrite_mode . ce_config)
 
 computeMode :: Neovim env ComputeMode
 computeMode = pure DefaultCompute
@@ -163,7 +163,7 @@ autoOne _ ms = withNormalizationMode ms $ \mode ->
         (mkAbsPathRnage fp $ ip_interval' ip)
         (T.unpack t)
 
-withNormalizationMode :: Maybe String -> (Rewrite -> Neovim e ()) -> Neovim e ()
+withNormalizationMode :: Maybe String -> (Rewrite -> Neovim CornelisEnv ()) -> Neovim CornelisEnv ()
 withNormalizationMode Nothing f = normalizationMode >>= f
 withNormalizationMode (Just s) f =
   case readMaybe s of

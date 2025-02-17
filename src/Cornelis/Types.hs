@@ -26,7 +26,7 @@ import Control.Concurrent.Chan.Unagi (InChan)
 import Control.Monad.State.Class
 import Cornelis.Debug
 import Cornelis.Offsets (Pos(..), Interval(..), AgdaIndex, AgdaPos, AgdaInterval, VimIndex, LineNumber, Indexing(..))
-import Cornelis.Types.Agda (InteractionId)
+import Cornelis.Types.Agda (InteractionId, Rewrite(..))
 import Data.Aeson hiding (Error)
 import Data.Char (toLower)
 import Data.Functor.Identity
@@ -102,11 +102,20 @@ readSplitLocation s = case fmap toLower s of
   "bottom"     -> Just OnBottom
   _            -> Nothing
 
+readRewrite :: String -> Maybe Rewrite
+readRewrite s = case fmap toLower s of
+  "asis"         -> Just AsIs
+  "instantiated" -> Just Instantiated
+  "headnormal"   -> Just HeadNormal
+  "simplified"   -> Just Simplified
+  "normalised"   -> Just Normalised
+  _              -> Nothing
 
 data CornelisConfig = CornelisConfig
   { cc_max_height :: Int64
   , cc_max_width :: Int64
   , cc_split_location :: SplitLocation
+  , cc_rewrite_mode :: Rewrite
   }
   deriving (Show, Generic)
 
@@ -115,6 +124,7 @@ data CornelisEnv = CornelisEnv
   , ce_stream :: InChan AgdaResp
   , ce_namespace :: Int64
   , ce_config :: CornelisConfig
+
   }
   deriving Generic
 

@@ -3,6 +3,7 @@
 module Cornelis.Config where
 
 import           Cornelis.Types
+import           Cornelis.Types.Agda (Rewrite(..))
 import           Cornelis.Utils (objectToInt, objectToText)
 import           Data.Maybe (fromMaybe)
 import qualified Data.Text as T
@@ -38,4 +39,6 @@ getConfig
         (getVar "cornelis_max_width")
     <*> (fromMaybe Horizontal . (>>= (readSplitLocation . T.unpack <=< objectToText)) <$>
         getVarWithAlternatives ["cornelis_split_location", "cornelis_split_direction"])
+    <*> (fromMaybe HeadNormal . (>>= (readRewrite . T.unpack <=< objectToText)) <$>
+        (getVar "cornelis_rewrite_mode"))
 

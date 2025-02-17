@@ -69,6 +69,7 @@ These commands can be used in context of a hole:
 Commands with an `<RW>` argument take an optional normalization mode argument,
 one of `AsIs`, `Instantiated`, `HeadNormal`, `Simplified` or `Normalised`. When
 omitted, defaults to `Normalised`.
+This default may be specified in vimrc as `g:cornelis_rewrite_mode`.
 
 Commands with a `<CM>` argument take an optional compute mode argument:
 
@@ -358,6 +359,19 @@ The following configuration options are available:
 - `left`: Opens at the left of the window.
 - `right`: Opens at the right of the window.
 
+Set default rewrite mode to use in commands which take an optional
+normalization mode argument
+
+```viml
+let g:cornelis_rewrite_mode = 'HeadNormal'
+```
+
+The following configuration options are available:
+- `AsIs`
+- `Instantiated`
+- `HeadNormal`
+- `Simplified`
+- `Normalised`
 
 ### Aligning Reasoning Justification
 
