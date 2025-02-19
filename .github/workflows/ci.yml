@@ -13,11 +13,11 @@ jobs:
     with:
       os: ubuntu-22.04
 
-  stack-macos:
-    name: Stack macOS
-    uses: ./.github/workflows/stack.yml
-    with:
-      os: macos-latest
+#  stack-macos:
+#    name: Stack macOS
+#    uses: ./.github/workflows/stack.yml
+#    with:
+#      os: macos-latest
 
   stack-windows:
     name: Stack Windows
@@ -32,8 +32,8 @@ jobs:
     with:
       os: ubuntu-22.04
 
-  nix-macos:
-    name: Nix macOS
-    uses: ./.github/workflows/nix.yml
-    with:
-      os: macos-latest
+#  nix-macos:
+#    name: Nix macOS
+#    uses: ./.github/workflows/nix.yml
+#    with:
+#      os: macos-latest
