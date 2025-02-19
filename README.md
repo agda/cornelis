@@ -172,27 +172,33 @@ text objects to behave.
 
 Make sure you have [`stack`](https://docs.haskellstack.org/en/stable/install_and_upgrade/) on your PATH!
 
+For [vim-plug](https://github.com/junegunn/vim-plug):
+
 ```viml
 Plug 'kana/vim-textobj-user'
 Plug 'neovimhaskell/nvim-hs.vim'
-Plug 'isovector/cornelis', { 'do': 'stack build' }
+Plug 'isovector/cornelis', { 'do': 'stack build', 'tag': '*' }
+```
+
+for [lazy.nvim](https://github.com/folke/lazy.nvim):
+
+```lua
+{
+  'isovector/cornelis',
+  name = 'cornelis',
+  ft = 'agda',
+  build = 'stack install',
+  dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
+  version = '*',
+}
 ```
 
 
 ### Agda Version
 
-`cornelis` is tested only against `agda-2.6.3`. If you run into weird error
-messages from vim, it's probably because you're running an old version of
-`agda`. If possible, try upgrading, if not, file a bug and I'll see if I can
-help.
-
-In addition, there are some bugs in the most recent version of `agda` that
-negatively affect `cornelis`. For best results, build from head, ensuring you
-have the following patches:
-
-- https://github.com/agda/agda/pull/5752
-- https://github.com/agda/agda/pull/5776
-
+If you are having issues, try using a tag which matches your agda major version
+(e.g. for Agda `v2.7.0.1` use cornelis `v2.7.*`). If there is no matching
+version that is working for a new version of agda, please create an issue.
 
 ### Installation with Nix
 
