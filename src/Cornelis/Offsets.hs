@@ -130,7 +130,7 @@ data Interval p = Interval { iStart, iEnd :: !p }
 
 instance Show p => Show (Interval p) where
   showsPrec n (Interval s e) =
-    showParen (n >= 11) $ showString "Interval " . showsPrec 11 s . showSpace . showsPrec 11 e
+    showParen (n >= 11) $ showString "Interval () " . showsPrec 11 s . showSpace . showsPrec 11 e
 
 -- Common specializations
 
