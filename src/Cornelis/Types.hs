@@ -314,6 +314,7 @@ data DisplayInfo
   | HelperFunction Text
   | InferredType Type
   | DisplayError Text
+  | IntroConstructorUnknown [Text]
   | WhyInScope Text
   | NormalForm Text
   | UnknownDisplayInfo Value
@@ -339,6 +340,7 @@ instance FromJSON DisplayInfo where
       "Error" ->
         obj .: "error" >>= \err ->
           DisplayError <$> err .: "message"
+      "IntroConstructorUnknown" -> IntroConstructorUnknown <$> obj .: "constructors"
       "InferredType" ->
         InferredType <$> obj .: "expr"
       "WhyInScope" ->

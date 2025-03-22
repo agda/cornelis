@@ -176,6 +176,11 @@ prettyGoals (InferredType ty) =
 prettyGoals (WhyInScope msg) = pretty msg
 prettyGoals (NormalForm expr) = pretty expr
 prettyGoals (DisplayError err) = annotate CornelisError $ pretty err
+prettyGoals (IntroConstructorUnknown constructors) = vsep
+  [ annotate CornelisErrorWarning "Don't know which constructor to introduce."
+  , mempty
+  , section "Constructors available" constructors prettyName
+  ]
 prettyGoals (UnknownDisplayInfo v) = annotate CornelisError $ pretty $ show v
 
 prettyInterval :: AgdaInterval -> Doc HighlightGroup
