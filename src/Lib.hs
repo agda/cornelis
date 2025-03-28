@@ -42,6 +42,7 @@ getInteractionPoint b i = gets $ preview $ #cs_buffers . ix b . #bs_ips . ix i
 
 respondToHelperFunction :: DisplayInfo -> Neovim env ()
 respondToHelperFunction (HelperFunction sig) = setreg "\"" sig
+respondToHelperFunction (Version ver) = reportInfo ver
 respondToHelperFunction _ = pure ()
 
 
@@ -222,6 +223,7 @@ cornelis = do
         , $(command "CornelisQuestionToMeta"   'doQuestionToMeta)   [CmdSync Async]
         , $(command "CornelisInc"              'doIncNextDigitSeq)  [CmdSync Async]
         , $(command "CornelisDec"              'doDecNextDigitSeq)  [CmdSync Async]
+        , $(command "CornelisAgdaVersion"      'doGetVersion)       [CmdSync Async]
         , $(command "CornelisDebug"            'doDebug)            [CmdSync Async, debug_complete]
         , $(command "CornelisCloseInfoWindows" 'doCloseInfoWindows) [CmdSync Sync]
         , $(function "InternalCornelisRewriteModeCompletion" 'rewriteModeCompletion) Sync

@@ -317,6 +317,7 @@ data DisplayInfo
   | IntroConstructorUnknown [Text]
   | WhyInScope Text
   | NormalForm Text
+  | Version Text
   | UnknownDisplayInfo Value
   deriving (Eq, Ord, Show, Generic)
 
@@ -365,6 +366,7 @@ instance FromJSON DisplayInfo where
               InferredType <$> info .: "expr"
             (_ :: Text) ->
               pure $ UnknownDisplayInfo v
+      "Version" -> Version <$> obj .: "version"
       (_ :: Text) -> pure $ UnknownDisplayInfo v
 
 instance FromJSON Response where

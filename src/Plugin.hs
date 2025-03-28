@@ -330,6 +330,12 @@ caseSplit thing = withAgda $ void $ withGoalAtCursor $ \b ip -> do
         (mkAbsPathRnage fp $ ip_interval' ip)
     $ T.unpack thing
 
+getVersion :: Neovim CornelisEnv ()
+getVersion = withAgda $ void $ withCurrentBuffer $ getAgda >=> runIOTCM Cmd_show_version
+
+doGetVersion :: CommandArguments -> Neovim CornelisEnv ()
+doGetVersion = const getVersion
+
 doQuestionToMeta :: CommandArguments -> Neovim CornelisEnv ()
 doQuestionToMeta _ = withCurrentBuffer questionToMeta
 
