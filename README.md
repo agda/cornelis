@@ -167,7 +167,19 @@ text objects to behave.
 
 `ih`/`ah` will operate on `{!` and `!}`.
 
+### Debugging
 
+When debugging the cornelis plugin or creating an issue, set the `cornelis_debug` variable.
+
+```viml
+let g:cornelis_debug = v:true
+```
+
+```lua
+vim.g.cornelis_debug = true
+```
+
+Cornelis will then output agda interaction information to `/tmp/agda.log`.
 
 ## Installation
 

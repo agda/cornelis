@@ -31,6 +31,13 @@ objectToText :: Object -> Maybe Text
 objectToText (ObjectString w) = Just $ decodeUtf8 w
 objectToText _ = Nothing
 
+objectToBool :: Object -> Maybe Bool
+objectToBool (ObjectBool b) = Just b
+objectToBool o = objectToInt @Int o >>= \case
+    0 -> Just False
+    1 -> Just True
+    _ -> Nothing
+
 neovimAsync :: (MonadUnliftIO m) => m a -> m (Async a)
 neovimAsync m =
   withRunInIO $ \lower ->

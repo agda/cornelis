@@ -5,10 +5,10 @@ module Cornelis.Agda where
 
 import           Control.Concurrent.Chan.Unagi (newChan, readChan, writeChan)
 import           Control.Lens
-import           Control.Monad (forever, replicateM_, when)
+import           Control.Monad (forever, replicateM_)
 import           Control.Monad.IO.Class
 import           Control.Monad.State
-import           Cornelis.Debug (reportExceptions)
+import           Cornelis.Debug (reportExceptions, debugString)
 import           Cornelis.InfoWin (buildInfoBuffer)
 import           Cornelis.Types
 import           Cornelis.Types.Agda
@@ -28,9 +28,8 @@ import           System.Process
 
 ------------------------------------------------------------------------------
 -- | When true, dump out received JSON as it arrives.
-debugJson :: Bool
-debugJson = False
-
+debugJson :: Neovim CornelisEnv Bool
+debugJson = asks $ cc_debug . ce_config
 
 ------------------------------------------------------------------------------
 -- | Create an 'Agda' environment for the given buffer. This spawns an
@@ -70,7 +69,7 @@ spawnAgda buffer = do
           Right res -> do
             case res of
               HighlightingInfo _ _ -> pure ()
-              _ -> when debugJson $ vim_report_error $ T.pack $ show resp
+              _ -> whenM debugJson $ debugString $ LT.unpack resp
             liftIO $ writeChan chan $ AgdaResp buffer res
 
       void $ neovimAsync $ liftIO $ forever $ do

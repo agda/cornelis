@@ -116,6 +116,7 @@ data CornelisConfig = CornelisConfig
   , cc_max_width :: Int64
   , cc_split_location :: SplitLocation
   , cc_rewrite_mode :: Rewrite
+  , cc_debug :: Bool
   }
   deriving (Show, Generic)
 

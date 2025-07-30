@@ -15,11 +15,15 @@ traceMX :: Show a => String -> a -> Neovim env ()
 traceMX herald a =
   vim_report_error $ "!!!" <> herald <> ": " <> show a
 
-debug :: (Show a, MonadIO m) => a -> m ()
-debug x = liftIO $ go 100
+debugString :: MonadIO m => String -> m ()
+debugString s = liftIO $ go 100
   where
     go 0 = pure ()
     go n =
       catch
-       (appendFile  "/tmp/agda.log" (show x <> "\n"))
+       (appendFile  "/tmp/agda.log" (s <> "\n"))
        (\e -> if isAlreadyInUseError e then go (n-1 :: Int) else throw e)
+
+
+debug :: (Show a, MonadIO m) => a -> m ()
+debug = debugString . show
