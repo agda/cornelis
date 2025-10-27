@@ -35,3 +35,24 @@ function! cornelis#bind_input(key, result)
   endif
 endfunction
 
+function! cornelis#unbind_input(key) abort
+  let l:cornelis_agda_prefix = get(g:, 'cornelis_agda_prefix', '<localleader>')
+  let l:lhs = l:cornelis_agda_prefix . substitute(a:key, '|', '<bar>', 'g')
+
+  execute 'silent! iunmap <buffer> ' . l:lhs
+  execute 'silent! cunmap <buffer> ' . l:lhs
+
+  if exists('g:agda_input') && type(g:agda_input) == type({})
+    let l:first = a:key[0:0]
+    let l:rest  = (len(a:key) > 1) ? a:key[1:] : "\<CR>"
+
+    if has_key(g:agda_input, l:first)
+      if has_key(g:agda_input[l:first], l:rest)
+        call remove(g:agda_input[l:first], l:rest)
+      endif
+      if empty(g:agda_input[l:first])
+        call remove(g:agda_input, l:first)
+      endif
+    endif
+  endif
+endfunction
