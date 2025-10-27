@@ -137,6 +137,10 @@ call cornelis#bind_input("nat", "ℕ")
 
 will add `<LocalLeader>nat` as an input remapping for `ℕ`.
 
+The inverse of `cornelis#bind_input("foo", "...")` is `cornelis#unbind_input("foo")`.
+Note that this cannot and will not attempt to undo any custom agda-input
+management, such as through `g:cornelis_bind_input_hook` (see below).
+
 
 #### Custom Hooks
 
