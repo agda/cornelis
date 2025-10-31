@@ -310,6 +310,6 @@ intervalsToRange :: a -> [IntervalWithoutFile] -> Range' a
 intervalsToRange _ [] = NoRange
 intervalsToRange f is = Range f (Seq.fromList is)
 
-mkAbsPathRnage :: Text -> IntervalWithoutFile -> Range
-mkAbsPathRnage = intervalToRange . Just . AbsolutePath . T.unpack
+mkAbsPathRange :: Text -> IntervalWithoutFile -> Range
+mkAbsPathRange = intervalToRange . Just . AbsolutePath . T.unpack
 
