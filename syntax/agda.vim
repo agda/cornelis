@@ -11,7 +11,7 @@ let s:cpo_save = &cpo
 set cpo&vim
 
 " The following sets up syntax highlighting by linking
-" pluging highlight groups to default highlight groups.
+" plugin highlight groups to default highlight groups.
 
 " Highlight of a hole.
 hi def link CornelisHole                 Todo

@@ -147,7 +147,7 @@ solveOne _ ms = withNormalizationMode ms $ \mode ->
       Cmd_solveOne
         mode
         (ip_id ip)
-        (mkAbsPathRnage fp $ ip_interval' ip)
+        (mkAbsPathRange fp $ ip_interval' ip)
         ""
 
 autoOne :: CommandArguments -> Maybe String -> Neovim CornelisEnv ()
@@ -160,7 +160,7 @@ autoOne _ ms = withNormalizationMode ms $ \mode ->
       Cmd_autoOne
         mode
         (ip_id ip)
-        (mkAbsPathRnage fp $ ip_interval' ip)
+        (mkAbsPathRange fp $ ip_interval' ip)
         (T.unpack t)
 
 withNormalizationMode :: Maybe String -> (Rewrite -> Neovim CornelisEnv ()) -> Neovim CornelisEnv ()
@@ -189,7 +189,7 @@ typeContext _ ms = withNormalizationMode ms $ \mode ->
       Cmd_goal_type_context
         mode
         (ip_id goal)
-        (mkAbsPathRnage fp $ ip_interval' goal)
+        (mkAbsPathRange fp $ ip_interval' goal)
         ""
 
 typeContextInfer :: CommandArguments -> Maybe String -> Neovim CornelisEnv ()
@@ -202,7 +202,7 @@ typeContextInfer _ ms = withNormalizationMode ms $ \mode ->
       $ Cmd_goal_type_context_infer
           mode
           (ip_id ip)
-          (mkAbsPathRnage fp $ ip_interval' ip)
+          (mkAbsPathRange fp $ ip_interval' ip)
       $ T.unpack contents
 
 doRefine :: CommandArguments -> Neovim CornelisEnv ()
@@ -251,7 +251,7 @@ elaborate mode = withAgda $ void $ withGoalAtCursor $ \b ip -> do
     $ Cmd_elaborate_give
         mode
         (ip_id ip)
-        (mkAbsPathRnage fp $ ip_interval' ip)
+        (mkAbsPathRange fp $ ip_interval' ip)
     $ T.unpack t
 
 doTypeInfer :: CommandArguments -> Maybe String -> Neovim CornelisEnv ()
@@ -292,7 +292,7 @@ doNormalize _ ms = withComputeMode ms $ \mode ->
               $ Cmd_compute
                   mode
                   (ip_id ip)
-                  (mkAbsPathRnage fp $ ip_interval' ip)
+                  (mkAbsPathRange fp $ ip_interval' ip)
               $ T.unpack t
 
 helperFunc :: Rewrite -> Text -> Neovim CornelisEnv ()
@@ -304,7 +304,7 @@ helperFunc mode expr = do
       $ Cmd_helper_function
           mode
           (ip_id ip)
-          (mkAbsPathRnage fp $ ip_interval' ip)
+          (mkAbsPathRange fp $ ip_interval' ip)
       $ T.unpack expr
 
 doHelperFunc :: CommandArguments -> Maybe String -> Neovim CornelisEnv ()
@@ -327,7 +327,7 @@ caseSplit thing = withAgda $ void $ withGoalAtCursor $ \b ip -> do
   flip runIOTCM agda
     $ Cmd_make_case
         (ip_id ip)
-        (mkAbsPathRnage fp $ ip_interval' ip)
+        (mkAbsPathRange fp $ ip_interval' ip)
     $ T.unpack thing
 
 getVersion :: Neovim CornelisEnv ()
