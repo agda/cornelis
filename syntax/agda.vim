@@ -26,6 +26,7 @@ hi def link CornelisWarn                 DiagnosticWarn
 hi def link CornelisUnsolvedMeta         CornelisWarn
 hi def link CornelisUnsolvedConstraint   CornelisWarn
 hi def link CornelisTerminationProblem   CornelisWarn
+hi def link CornelisPositivityProblem    CornelisWarn
 hi def link CornelisMissingDefinition    CornelisWarn
 hi def link CornelisTypeChecks           CornelisWarn
 

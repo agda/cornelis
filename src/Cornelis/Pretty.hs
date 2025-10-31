@@ -40,6 +40,7 @@ data HighlightGroup
   | CornelisUnsolvedMeta -- ^ An unresolved meta variable
   | CornelisUnsolvedConstraint -- ^ An unresolved constraint
   | CornelisTerminationProblem -- ^ Failed termination check
+  | CornelisPositivityProblem -- ^ Failed positivity check
   | CornelisKeyword -- ^ An Agda keywords (@where@, @let@, etc.)
   | CornelisSymbol -- ^ A symbol, not part of an identifier (@=@, @:@, @{@, etc.)
   | CornelisType -- ^ A datatype (@Nat@, @Bool@, etc.)
@@ -75,6 +76,7 @@ priority CornelisWarn               = 150
 priority CornelisUnsolvedMeta       = 150
 priority CornelisUnsolvedConstraint = 150
 priority CornelisTerminationProblem = 150
+priority CornelisPositivityProblem  = 150
 priority _                          = 100
 
 atomToHlGroup :: Text -> Maybe HighlightGroup
