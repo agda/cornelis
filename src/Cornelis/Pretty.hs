@@ -74,6 +74,7 @@ priority CornelisErrorWarning       = 150
 priority CornelisWarn               = 150
 priority CornelisUnsolvedMeta       = 150
 priority CornelisUnsolvedConstraint = 150
+priority CornelisTerminationProblem = 150
 priority _                          = 100
 
 atomToHlGroup :: Text -> Maybe HighlightGroup
