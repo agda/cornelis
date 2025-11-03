@@ -24,8 +24,8 @@ import           Prettyprinter.Internal.Type
 --
 -- The suffix after @Cornelis/XXX/@ matches the names as returned by Agda, contained in 'C.hl_atoms'.
 -- How these names are generated is not documented on Agda's side, but the implementation can be found at
--- ['Agda.Interaction.Highlighting.Common.toAtoms'](https://github.com/agda/agda/src/full/Agda/Interaction/Highlighting/Common.hs).
--- The corresponding Agda types are found in 'Agda.Interaction.Highlighting.Precise'.
+-- ['Agda.Interaction.Highlighting.Common.toAtoms'](https://github.com/agda/agda/blob/2ee8d18194b6f6db1f144c12cb177dbc17089d5e/src/full/Agda/Interaction/Highlighting/Common.hs#L19).
+-- The corresponding Agda types are found in 'Agda.Syntax.Common.Aspect'.
 --
 -- NOTE:
 --  * When modifying this type, remember to sync the changes to @syntax/agda.vim@
@@ -39,6 +39,8 @@ data HighlightGroup
   | CornelisHole -- ^ An open hole (@{! /.../ !}@ and @?@)
   | CornelisUnsolvedMeta -- ^ An unresolved meta variable
   | CornelisUnsolvedConstraint -- ^ An unresolved constraint
+  | CornelisTerminationProblem -- ^ Failed termination check
+  | CornelisPositivityProblem -- ^ Failed positivity check
   | CornelisKeyword -- ^ An Agda keywords (@where@, @let@, etc.)
   | CornelisSymbol -- ^ A symbol, not part of an identifier (@=@, @:@, @{@, etc.)
   | CornelisType -- ^ A datatype (@Nat@, @Bool@, etc.)
@@ -73,6 +75,8 @@ priority CornelisErrorWarning       = 150
 priority CornelisWarn               = 150
 priority CornelisUnsolvedMeta       = 150
 priority CornelisUnsolvedConstraint = 150
+priority CornelisTerminationProblem = 150
+priority CornelisPositivityProblem  = 150
 priority _                          = 100
 
 atomToHlGroup :: Text -> Maybe HighlightGroup
