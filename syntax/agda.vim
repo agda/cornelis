@@ -33,8 +33,8 @@ hi def link CornelisTypeChecks           CornelisWarn
 hi def link CornelisKeyword              Keyword
 hi def link CornelisSymbol               Normal
 
-hi def link CornelisType                 Type
-hi def link CornelisRecord               CornelisType
+hi def link CornelisDatatype             Type
+hi def link CornelisRecord               CornelisDatatype
 
 hi def link CornelisModule               Constant
 
