@@ -43,7 +43,7 @@ data HighlightGroup
   | CornelisPositivityProblem -- ^ Failed positivity check
   | CornelisKeyword -- ^ An Agda keywords (@where@, @let@, etc.)
   | CornelisSymbol -- ^ A symbol, not part of an identifier (@=@, @:@, @{@, etc.)
-  | CornelisType -- ^ A datatype (@Nat@, @Bool@, etc.)
+  | CornelisDatatype -- ^ A datatype (@Nat@, @Bool@, etc.)
   | CornelisPrimitiveType -- ^ A primitive/builtin Agda type
   | CornelisRecord -- ^ A datatype, defined as a @record@
   | CornelisFunction -- ^ A function, e.g. a top-level declaration
@@ -134,7 +134,7 @@ renderWithHlGroups = go [] 0 0
 
 
 prettyType :: C.Type -> Doc HighlightGroup
-prettyType (C.Type ty) = annotate CornelisType $ sep $ fmap pretty $ T.lines ty
+prettyType (C.Type ty) = annotate CornelisDatatype $ sep $ fmap pretty $ T.lines ty
 
 
 groupScopeSet :: [InScope] -> [[InScope]]
@@ -171,7 +171,7 @@ prettyGoals (GoalSpecific _ scoped ty mhave mboundary mconstraints) =
 prettyGoals (HelperFunction sig) =
   section "Helper Function"
     [ mempty
-    , annotate CornelisType $ pretty sig
+    , annotate CornelisDatatype $ pretty sig
     , mempty
     , annotate CornelisComment $ parens "copied to \" register"
     ] id
