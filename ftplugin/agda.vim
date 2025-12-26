@@ -4,7 +4,7 @@ setlocal formatoptions+=croql
 setlocal comments=sfl:{-,mb1:--,ex:-},:--
 setlocal commentstring=--\ %s
 
-setlocal iskeyword=@,!-~,^.,_,^\(,^\),^\",^\',192-255
+setlocal iskeyword=@,!-~,^.,_,^\(,^\),^{,^},^\",^\',192-255
 
 if exists("b:cornelis_ftplugin")
   finish
