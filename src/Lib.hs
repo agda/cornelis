@@ -74,7 +74,7 @@ respond b (GiveAction result ip) = do
     Nothing -> reportError $ T.pack $ "Can't find interaction point " <> show i
     Just ip' -> do
       int <- getIpInterval b ip'
-      replaceInterval b int $ parenthesize $ replaceQuestion result
+      replaceInterval b int $ replaceQuestion result
   load
 -- Replace the interaction point with a result
 respond b (SolveAll solutions) = do
