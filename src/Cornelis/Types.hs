@@ -42,6 +42,7 @@ import GHC.Stack
 import Neovim hiding (err)
 import Neovim.API.Text (Buffer(..), Window)
 import System.Process (ProcessHandle)
+import Data.Bool (bool)
 
 deriving stock instance Ord Buffer
 
@@ -143,6 +144,13 @@ instance MonadState CornelisState (Neovim CornelisEnv) where
     mv <- asks ce_state
     liftIO $ writeIORef mv a
 
+data GiveResult
+  = Give_String Text
+  | Give_Paren
+  | Give_NoParen
+  deriving (Eq, Ord, Show)
+
+
 data Response
   = DisplayInfo DisplayInfo
   | ClearHighlighting -- TokenBased
@@ -156,7 +164,7 @@ data Response
     }
   | JumpToError FilePath AgdaIndex
   | InteractionPoints [InteractionPoint Maybe]
-  | GiveAction Text (InteractionPoint (Const ()))
+  | GiveAction GiveResult (InteractionPoint (Const ()))
   | MakeCase MakeCase
   | SolveAll [Solution]
   | Unknown Text Value
@@ -390,7 +398,9 @@ instance FromJSON Response where
         SolveAll <$> obj .: "solutions"
       "GiveAction" ->
         (obj .: "giveResult") >>= \result ->
-          GiveAction <$> result .: "str" <*> obj .: "interactionPoint"
+          GiveAction
+            <$> (Give_String <$> result .: "str" <|> bool Give_NoParen Give_Paren <$> result .: "paren")
+            <*> obj .: "interactionPoint"
       "DisplayInfo" ->
         DisplayInfo <$> obj .: "info"
       "JumpToError" ->
