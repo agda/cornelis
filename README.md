@@ -194,7 +194,7 @@ For [vim-plug](https://github.com/junegunn/vim-plug):
 ```viml
 Plug 'kana/vim-textobj-user'
 Plug 'neovimhaskell/nvim-hs.vim'
-Plug 'isovector/cornelis', { 'do': 'stack build', 'tag': '*' }
+Plug 'agda/cornelis', { 'do': 'stack build', 'tag': '*' }
 ```
 
 for [lazy.nvim](https://github.com/folke/lazy.nvim):
