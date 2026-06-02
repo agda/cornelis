@@ -14,6 +14,12 @@
 >
 > -- [Cornelis Vreeswijk](https://www.youtube.com/watch?v=oKUscEWPVAM)
 
+## ⚠️ Maintenance Status ⚠️
+
+This repository is currently **unmaintained**.
+
+Please reach out to the [agda community](https://wiki.portal.chalmers.se/agda/Main/Community)
+if you are interested in maintaining Cornelis.
 
 ## Overview
 
