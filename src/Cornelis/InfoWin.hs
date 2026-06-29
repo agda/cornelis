@@ -8,6 +8,7 @@ import           Control.Monad.State.Class
 import           Cornelis.Pretty
 import           Cornelis.Types
 import           Cornelis.Utils (withBufferStuff, windowsForBuffer, savingCurrentWindow, visibleBuffers)
+import qualified Cornelis.Vim.Compat as Compat
 import           Data.Foldable (for_)
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -45,7 +46,7 @@ closeInfoWindowsForUnseenBuffers = do
 
 closeInfoWindows :: Neovim env ()
 closeInfoWindows = do
-  ws <- vim_get_windows
+  ws <- Compat.nvim_list_wins
   for_ ws $ \w -> getBufferVariableOfWindow cornelisWindowVar w >>= \case
     Just True -> nvim_win_close w True
     _ -> pure ()
@@ -151,7 +152,7 @@ writeInfoBuffer ns iw doc = do
 
   let b = iw_buffer iw
   nvim_buf_set_option b "modifiable" $ ObjectBool True
-  buffer_set_lines b 0 (-1) True $ V.fromList s
+  buffer_set_lines b 0 (-1) True $ toObject <$> V.fromList s
 
   for_ (concatMap spanInfoHighlights hls) $ \(InfoHighlight (l, sc) ec hg) ->
     nvim_buf_add_highlight

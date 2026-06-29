@@ -16,6 +16,7 @@ import           Cornelis.Pretty
 import           Cornelis.Types
 import           Cornelis.Utils
 import           Cornelis.Vim (unvimify, vimify)
+import qualified Cornelis.Vim.Compat as Compat
 import           Data.Coerce (coerce)
 import           Data.IntervalMap.FingerTree (IntervalMap)
 import qualified Data.IntervalMap.FingerTree as IM
@@ -31,8 +32,8 @@ import           Neovim.API.Text
 
 lineIntervalsForBuffer :: Buffer -> Neovim CornelisEnv LineIntervals
 lineIntervalsForBuffer b = do
-  buf_lines <- nvim_buf_get_lines b 0 (-1) True
-  pure $ getLineIntervals buf_lines
+  buf_lines <- Compat.nvim_buf_get_lines b 0 (-1) True
+  pure $ getLineIntervals (V.fromList buf_lines)
 
 updateLineIntervals :: Buffer -> Neovim CornelisEnv ()
 updateLineIntervals b = do

@@ -7,6 +7,7 @@ import           Control.Lens ((%~), _head, _last, (&))
 import           Cornelis.Offsets
 import           Cornelis.Types
 import           Cornelis.Utils (objectToInt, savingCurrentPosition, savingCurrentWindow)
+import qualified Cornelis.Vim.Compat as Compat
 import           Data.Foldable (toList)
 import           Data.Int
 import qualified Data.Map as M
@@ -25,7 +26,7 @@ vimLastLine = -1
 
 getWindowCursor :: Window -> Neovim env AgdaPos
 getWindowCursor w = do
-  (toOneIndexed -> row, toZeroIndexed -> col) <- window_get_cursor w
+  (toOneIndexed -> row, toZeroIndexed -> col) <- Compat.window_get_cursor w
   -- window_get_cursor gives us a 1-indexed line, but that is the same way that
   -- lines are indexed.
   let line = zeroIndex row
@@ -60,13 +61,13 @@ setWindowCursor :: Window -> AgdaPos -> Neovim env ()
 setWindowCursor w p = do
   b <- window_get_buffer w
   Pos l c <- vimify b p
-  window_set_cursor w (fromOneIndexed (oneIndex l), fromZeroIndexed c)
+  Compat.window_set_cursor w (fromOneIndexed (oneIndex l), fromZeroIndexed c)
 
 replaceInterval :: Buffer -> Interval AgdaPos -> Text -> Neovim env ()
 replaceInterval b ival str
   = do
     Interval (Pos sl sc) (Pos el ec) <- traverse (vimify b) ival
-    nvim_buf_set_text b (from0 sl) (from0 sc) (from0 el) (from0 ec) $ V.fromList $ T.lines str
+    Compat.nvim_buf_set_text b (from0 sl) (from0 sc) (from0 el) (from0 ec) $ T.lines str
   where
     from0 = fromZeroIndexed
 
@@ -99,7 +100,7 @@ getBufferInterval b (Interval start end) = do
     Pos sl _ <- vimify b start
     Pos el _ <- vimify b end
     -- nvim_buf_get_lines is exclusive in its end line, thus the plus 1
-    ls <- fmap toList $ nvim_buf_get_lines b (from0 sl) (from0 el + 1) False
+    ls <- fmap toList $ Compat.nvim_buf_get_lines b (from0 sl) (from0 el + 1) False
     pure $ T.unlines $
       ls & _last %~ T.take (from1 (p_col end))
          & _head %~ T.drop (from1 (p_col start))

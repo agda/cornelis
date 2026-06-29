@@ -13,11 +13,11 @@ import           Control.Monad.IO.Unlift (MonadUnliftIO(withRunInIO))
 import           Control.Monad.Reader (withReaderT)
 import           Control.Monad.State.Class
 import           Cornelis.Types
+import qualified Cornelis.Vim.Compat as Compat
 import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Text.Encoding (decodeUtf8)
 import           Data.Traversable
-import qualified Data.Vector as V
 import           Neovim hiding (err)
 import           Neovim.API.Text
 import           Neovim.Context.Internal (Neovim(..), retypeConfig)
@@ -55,7 +55,7 @@ savingCurrentWindow m = do
 
 windowsForBuffer :: Buffer -> Neovim env [Window]
 windowsForBuffer b = do
-  wins <- fmap V.toList vim_get_windows
+  wins <- Compat.nvim_list_wins
   fmap catMaybes $ for wins $ \w -> do
     wb <- window_get_buffer w
     pure $ case wb == b of
@@ -64,7 +64,7 @@ windowsForBuffer b = do
 
 visibleBuffers :: Neovim env [(Window, Buffer)]
 visibleBuffers = do
-  wins <- fmap V.toList vim_get_windows
+  wins <- Compat.nvim_list_wins
   for wins $ \w -> fmap (w, ) $ window_get_buffer w
 
 criticalFailure :: Text -> Neovim env a

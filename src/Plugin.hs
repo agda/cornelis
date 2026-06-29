@@ -20,6 +20,7 @@ import           Cornelis.Types
 import           Cornelis.Types.Agda hiding (Error)
 import           Cornelis.Utils
 import           Cornelis.Vim
+import qualified Cornelis.Vim.Compat as Compat
 import           Data.Bool (bool)
 import           Data.Foldable (for_, fold, toList)
 import           Data.IORef (IORef, readIORef, atomicModifyIORef)
@@ -28,7 +29,6 @@ import qualified Data.Map as M
 import           Data.Ord
 import qualified Data.Text as T
 import           Data.Traversable (for)
-import qualified Data.Vector as V
 import           Neovim
 import           Neovim.API.Text
 import           Neovim.User.Input (input)
@@ -64,7 +64,7 @@ gotoDefinition = withAgda $ do
       -- TODO(sandy): escape spaces
       vim_command $ "edit " <> ds_filepath ds
       b' <- window_get_buffer w
-      contents <- fmap (T.unlines . V.toList) $ buffer_get_lines b' 0 (-1) False
+      contents <- fmap T.unlines $ Compat.nvim_buf_get_lines b' 0 (-1) False
       let buffer_idx = toBytes contents $ zeroIndex $ ds_position ds
       -- TODO(sandy): use window_set_cursor instead?
       vim_command $ "keepjumps normal! " <> T.pack (show buffer_idx) <> "go"
