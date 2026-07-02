@@ -21,7 +21,7 @@ likely be a slow response time for PRs and feature requests during this ramp-up
 period.
 
 If you are having issues building or running cornelis, please check
-[COMPATIBILITY.md] first before opening an issue!
+[COMPATIBILITY.md](COMPATIBILITY.md) first before opening an issue!
 
 ## Overview
 
