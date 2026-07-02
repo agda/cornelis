@@ -16,10 +16,12 @@
 
 ## ⚠️ Maintenance Status ⚠️
 
-This repository is currently **unmaintained**.
+This repository is currently in the process of switching maintainers. There will
+likely be a slow response time for PRs and feature requests during this ramp-up
+period.
 
-Please reach out to the [agda community](https://wiki.portal.chalmers.se/agda/Main/Community)
-if you are interested in maintaining Cornelis.
+If you are having issues building or running cornelis, please check
+[COMPATIBILITY.md] first before opening an issue!
 
 ## Overview
 
