@@ -45,6 +45,12 @@ respondToHelperFunction (HelperFunction sig) = setreg "\"" sig
 respondToHelperFunction (Version ver) = reportInfo ver
 respondToHelperFunction _ = pure ()
 
+parenthesize :: Text -> Text
+parenthesize t =
+  let trimmed = T.strip t
+   in if T.any (== ' ') trimmed && not (T.isPrefixOf "(" trimmed && T.isSuffixOf ")" trimmed)
+        then "(" <> trimmed <> ")"
+        else trimmed
 
 respond :: Buffer -> Response -> Neovim CornelisEnv ()
 -- Update the buffer's goal map
@@ -77,7 +83,7 @@ respond b (SolveAll solutions) = do
       Nothing -> reportError $ T.pack $ "Can't find interaction point " <> show i
       Just ip -> do
         int <- getIpInterval b ip
-        replaceInterval b int $ replaceQuestion ex
+        replaceInterval b int $ parenthesize $ replaceQuestion ex
   load
 respond b ClearHighlighting = do
   -- delete what we know about goto positions and stored extmarks
