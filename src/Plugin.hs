@@ -116,10 +116,13 @@ doAllGoals = const allGoals
 
 
 allGoals :: Neovim CornelisEnv ()
-allGoals =
-  withAgda $ withCurrentBuffer $ \b ->
-    withBufferStuff b $ \bs -> do
-      goalWindow b $ bs_goals bs
+allGoals = withAgda $ withCurrentBuffer $ \b -> do
+  agda <- getAgda b
+  -- Ask Agda for the current metas instead of relying only on the last load
+  -- response.  In particular, --allow-unsolved-metas may report goals as
+  -- invisible metas rather than interaction points.
+  mode <- normalizationMode
+  runIOTCM (Cmd_metas mode) agda
 
 
 doRestart :: CommandArguments -> Neovim CornelisEnv ()

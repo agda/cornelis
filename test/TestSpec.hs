@@ -75,6 +75,25 @@ spec = focus $ do
     renderGoal (eitherDecode $ goalInfo ",\"typeAux\":{\"boundary\":[]}")
       `shouldBe` "Goal: Set"
 
+  it "decodes and renders visible and invisible goals" $ do
+    let response = BL.pack $ concat
+          [ "{\"kind\":\"DisplayInfo\",\"info\":{"
+          , "\"kind\":\"AllGoalsWarnings\",\"errors\":[],\"warnings\":[],"
+          , "\"visibleGoals\":[{\"kind\":\"OfType\","
+          , "\"constraintObj\":{\"id\":0,\"range\":[{"
+          , "\"start\":{\"line\":1,\"col\":1},\"end\":{\"line\":1,\"col\":1}}]},"
+          , "\"type\":\"Nat\"}],"
+          , "\"invisibleGoals\":[{\"kind\":\"OfType\","
+          , "\"constraintObj\":{\"name\":\"_1\",\"range\":[]},"
+          , "\"type\":\"Nat\"}]}}"
+          ]
+        renderGoals (Right (DisplayInfo info)) =
+          renderStrict $ layoutPretty defaultLayoutOptions $ unAnnotate $ prettyGoals info
+        renderGoals result = error $ show result
+        rendered = renderGoals (eitherDecode response)
+    rendered `shouldSatisfy` T.isInfixOf "Visible Goals:"
+    rendered `shouldSatisfy` T.isInfixOf "Invisible Goals:"
+
   it "keeps a moved info window owned by another Cornelis instance" $ do
     withVim timeout $ \_ b -> do
       owner <- cornelisInit

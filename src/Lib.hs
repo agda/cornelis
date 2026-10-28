@@ -50,6 +50,9 @@ respond :: Buffer -> Response -> Neovim CornelisEnv ()
 -- Update the buffer's goal map
 respond b (DisplayInfo dp) = do
   respondToHelperFunction dp
+  case dp of
+    AllGoalsWarnings [] [] [] [] -> reportInfo "All done"
+    _ -> pure ()
   when (dp & hasn't #_GoalSpecific) $
     modifyBufferStuff b $ #bs_goals .~ dp
   goalWindow b dp
