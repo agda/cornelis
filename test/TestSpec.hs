@@ -5,20 +5,32 @@ module TestSpec where
 
 import           Control.Concurrent (threadDelay)
 import           Control.Monad (void)
+import           Control.Monad.State.Class (gets)
+import           Cornelis.Agda (getAgda, withAgda)
+import           Cornelis.InfoWin (closeInfoWindows)
+import           Cornelis.Offsets (toOneIndexed)
+import           Cornelis.Pretty (prettyGoals)
 import           Cornelis.Subscripts (decNextDigitSeq, incNextDigitSeq)
 import           Cornelis.Types
 import           Cornelis.Types.Agda (Rewrite (..))
-import           Cornelis.Utils (withBufferStuff, withLocalEnv)
+import           Cornelis.Utils (objectToInt, withBufferStuff, withLocalEnv)
 import           Cornelis.Vim
+import           Data.Aeson (eitherDecode)
+import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Map as M
+import           Data.Maybe (isJust)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           Neovim (liftIO)
 import           Neovim.API.Text
 import           Neovim.Test
 import           Plugin
+import           Prettyprinter (defaultLayoutOptions, layoutPretty, unAnnotate)
+import           Prettyprinter.Render.Text (renderStrict)
+import           System.Process (getProcessExitCode)
 import           Test.Hspec
 import           Utils
-import           Lib (cornelisInit)
+import           Lib (cornelisInit, giveText29, respond)
 
 
 broken :: String -> SpecWith a -> SpecWith a
@@ -27,6 +39,107 @@ broken = before_ . pendingWith
 spec :: Spec
 spec = focus $ do
   let timeout = Seconds 60
+
+  it "decodes GiveAction results from different Agda versions" $ do
+    let decodeGive result = eitherDecode $ BL.pack $ concat
+          [ "{\"kind\":\"GiveAction\",\"interactionPoint\":{\"id\":0},"
+          , "\"giveResult\":"
+          , result
+          , "}"
+          ]
+        isGiveResult expected (Right (GiveAction actual _)) = actual == expected
+        isGiveResult _ _ = False
+    decodeGive "{\"str\":\"true\"}"
+      `shouldSatisfy` isGiveResult (GiveStr "true")
+    decodeGive "{\"paren\":true}"
+      `shouldSatisfy` isGiveResult (GiveParen29 True)
+    decodeGive "{\"paren\":false}"
+      `shouldSatisfy` isGiveResult (GiveParen29 False)
+    giveText29 "f x" (GiveParen29 True) `shouldBe` "(f x)"
+    giveText29 "f x" (GiveParen29 False) `shouldBe` "f x"
+
+  it "omits empty boundary sections from goal information" $ do
+    let goalInfo typeAux = BL.pack $ concat
+          [ "{\"kind\":\"DisplayInfo\",\"info\":{\"kind\":\"GoalSpecific\","
+          , "\"interactionPoint\":{\"id\":0,\"range\":[{"
+          , "\"start\":{\"line\":1,\"col\":1},"
+          , "\"end\":{\"line\":1,\"col\":1}}]},"
+          , "\"goalInfo\":{\"kind\":\"GoalType\",\"entries\":[],\"type\":\"Set\""
+          , typeAux
+          , "}}}"
+          ]
+        renderGoal (Right (DisplayInfo info)) =
+          renderStrict $ layoutPretty defaultLayoutOptions $ unAnnotate $ prettyGoals info
+        renderGoal result = error $ show result
+    renderGoal (eitherDecode $ goalInfo "") `shouldBe` "Goal: Set"
+    renderGoal (eitherDecode $ goalInfo ",\"typeAux\":{\"boundary\":[]}")
+      `shouldBe` "Goal: Set"
+
+  it "decodes and renders visible and invisible goals" $ do
+    let response = BL.pack $ concat
+          [ "{\"kind\":\"DisplayInfo\",\"info\":{"
+          , "\"kind\":\"AllGoalsWarnings\",\"errors\":[],\"warnings\":[],"
+          , "\"visibleGoals\":[{\"kind\":\"OfType\","
+          , "\"constraintObj\":{\"id\":0,\"range\":[{"
+          , "\"start\":{\"line\":1,\"col\":1},\"end\":{\"line\":1,\"col\":1}}]},"
+          , "\"type\":\"Nat\"}],"
+          , "\"invisibleGoals\":[{\"kind\":\"OfType\","
+          , "\"constraintObj\":{\"name\":\"_1\",\"range\":[]},"
+          , "\"type\":\"Nat\"}]}}"
+          ]
+        renderGoals (Right (DisplayInfo info)) =
+          renderStrict $ layoutPretty defaultLayoutOptions $ unAnnotate $ prettyGoals info
+        renderGoals result = error $ show result
+        rendered = renderGoals (eitherDecode response)
+    rendered `shouldSatisfy` T.isInfixOf "Visible Goals:"
+    rendered `shouldSatisfy` T.isInfixOf "Invisible Goals:"
+
+  it "keeps a moved info window owned by another Cornelis instance" $ do
+    withVim timeout $ \_ b -> do
+      owner <- cornelisInit
+      withLocalEnv owner $ withAgda $ goalWindow b (Version "owned")
+
+      vim_command "wincmd j"
+      ownedWindow <- nvim_get_current_win
+      vim_command "wincmd L"
+      movedLayout <- vim_eval "winlayout()"
+      movedHeight <- window_get_height ownedWindow
+      vim_command "wincmd h"
+
+      other <- cornelisInit
+      withLocalEnv other closeInfoWindows
+      withLocalEnv owner $ goalWindow b (Version "updated")
+
+      stillOpen <- window_is_valid ownedWindow
+      reloadedLayout <- vim_eval "winlayout()"
+      reloadedHeight <- window_get_height ownedWindow
+      reloadedWidth <- window_get_width ownedWindow
+      liftIO $ stillOpen `shouldBe` True
+      liftIO $ reloadedLayout `shouldBe` movedLayout
+      liftIO $ reloadedHeight `shouldBe` movedHeight
+      liftIO $ reloadedWidth `shouldBe` cc_max_width (ce_config owner)
+
+  it "stops the Agda process when its buffer is detached" $ do
+    withVim timeout $ \_ b -> do
+      env <- cornelisInit
+      withLocalEnv env $ withAgda $ do
+        bufferNum <- buffer_get_number b
+        agda <- getAgda b
+        detachBuffer bufferNum
+        buffers <- gets cs_buffers
+        processExit <- liftIO $ getProcessExitCode $ a_hdl agda
+        liftIO $ M.member b buffers `shouldBe` False
+        liftIO $ processExit `shouldSatisfy` isJust
+
+  it "adds the old cursor position to the jumplist before an error jump" $ do
+    withVim timeout $ \w b -> do
+      env <- cornelisInit
+      withLocalEnv env $ do
+        buffer_set_lines b 0 (-1) False $ V.replicate 100 "x"
+        window_set_cursor w (90, 0)
+        respond b $ JumpToError "" $ toOneIndexed 60
+        jumpedFrom <- vim_eval "getjumplist()[0][-1].lnum"
+        liftIO $ objectToInt jumpedFrom `shouldBe` Just (90 :: Int)
 
   it "should load read-only file" $ do
     withVim timeout $ \w b -> do
@@ -178,4 +291,3 @@ spec = focus $ do
         liftIO $ threadDelay 5e5
         res <- buffer_get_lines (iw_buffer $ bs_info_win bs) vimFirstLine vimLastLine False
         liftIO $ V.toList res `shouldContain` ["Inferred Type: Bool"]
-

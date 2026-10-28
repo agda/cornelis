@@ -311,6 +311,29 @@ Lua:
 vim.g.cornelis_use_global_binary = 1
 ```
 
+### Development with Nix
+
+Enter the reproducible development shell before working on Cornelis:
+
+```sh
+nix develop
+cabal build
+cabal test
+```
+
+The shell supplies GHC, Cabal, Agda (with the standard library), and the test
+runner, as well as `ghcid` for an automatic rebuild/test loop. Cabal's
+incremental build directory is `dist-newstyle/`, which is
+ignored by Git and persists in the checkout, so subsequent builds only rebuild
+what changed. Use `nix build` when you want to validate the packaged Nix
+derivation instead.
+
+For a continuous library check, run:
+
+```sh
+ghcid -c 'cabal repl lib:cornelis'
+```
+
 
 ## Example Configuration
 
@@ -372,6 +395,10 @@ and
 ```viml
 let g:cornelis_max_width = 40
 ```
+
+The height limit applies while the info window is in a horizontal split, and
+the width limit applies while it is in a vertical split. This follows the
+window's current orientation if it is moved after being opened.
 
 If you'd prefer your info window to appear somewhere else, you can set
 `g:cornelis_split_location` (previously `g:cornelis_split_direction`), e.g.

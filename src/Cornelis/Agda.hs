@@ -4,6 +4,7 @@
 module Cornelis.Agda where
 
 import           Control.Concurrent.Chan.Unagi (newChan, readChan, writeChan)
+import           Control.Concurrent.Async (cancel)
 import           Control.Lens
 import           Control.Monad (forever, replicateM_)
 import           Control.Monad.IO.Class
@@ -33,9 +34,8 @@ debugJson = asks $ cc_debug . ce_config
 
 ------------------------------------------------------------------------------
 -- | Create an 'Agda' environment for the given buffer. This spawns an
--- asynchronous thread that keeps an agda process alive as long as vim is open.
---
--- TODO(sandy): This leaks the process when the buffer is closed.
+-- asynchronous threads that keep an Agda process alive until its buffer is
+-- detached.
 spawnAgda :: Buffer -> Neovim CornelisEnv Agda
 spawnAgda buffer = do
   (m_in, m_out, _, hdl) <-
@@ -59,7 +59,7 @@ spawnAgda buffer = do
               _ -> pure ()
 
       -- On the first load, we make ourselves ready before Agda tells us anything
-      void $ neovimAsync $ (whenReady (pure ()) >>) . forever $ reportExceptions $ do
+      reader <- neovimAsync $ (whenReady (pure ()) >>) . forever $ reportExceptions $ do
         whenReady $ atomicWriteIORef ready True
         resp <- liftIO $ LT.hGetLine hout
         chan <- asks ce_stream
@@ -72,13 +72,22 @@ spawnAgda buffer = do
               _ -> whenM debugJson $ debugString $ LT.unpack resp
             liftIO $ writeChan chan $ AgdaResp buffer res
 
-      void $ neovimAsync $ liftIO $ forever $ do
+      writer <- neovimAsync $ liftIO $ forever $ do
         msg <- readChan c_out
         atomicWriteIORef ready False
         hPutStrLn hin msg
 
-      pure $ Agda buffer ready c_in hdl
+      pure $ Agda buffer ready c_in hdl [reader, writer]
     (_, _) -> error "can't start agda"
+
+
+------------------------------------------------------------------------------
+-- | Stop the workers for an Agda process, terminate it, and reap it.
+stopAgda :: Agda -> IO ()
+stopAgda agda = do
+  mapM_ cancel $ a_workers agda
+  terminateProcess $ a_hdl agda
+  void $ waitForProcess $ a_hdl agda
 
 
 ------------------------------------------------------------------------------
@@ -121,9 +130,11 @@ withAgda m = do
     Just _ -> m
     Nothing -> do
       agda <- spawnAgda buffer
+      bufferNum <- buffer_get_number buffer
       iw <- buildInfoBuffer
       modify' $ #cs_buffers %~ M.insert buffer BufferStuff
         { bs_agda_proc = agda
+        , bs_buffer_num = bufferNum
         , bs_ips = mempty
         , bs_ip_exts = mempty
         , bs_goto_sites = mempty
@@ -138,4 +149,3 @@ withAgda m = do
 -- | Get the 'Agda' environment for a given buffer.
 getAgda :: Buffer -> Neovim CornelisEnv Agda
 getAgda buffer = gets $ bs_agda_proc . (M.! buffer) . cs_buffers
-

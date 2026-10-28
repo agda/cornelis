@@ -66,7 +66,19 @@
           ghcVersions
         );
         devShells.default = pkgs.haskellPackages.shellFor {
+          # Keep dependency resolution in Nix, but compile the checkout with
+          # Cabal so dist-newstyle/ can be reused between iterations.
           packages = _: [self.packages.${system}.${name}];
+          nativeBuildInputs = [
+            pkgs.cabal-install
+            pkgs.haskellPackages.ghcid
+            pkgs.haskellPackages.hspec-discover
+          ];
+          buildInputs = [ agda ];
+          shellHook = ''
+            echo "Cornelis development shell"
+            echo "Run 'cabal build' or 'cabal test'; artifacts stay in $PWD/dist-newstyle"
+          '';
         };
       }
     );

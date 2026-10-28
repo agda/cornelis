@@ -9,11 +9,11 @@ import           Control.Lens
 import           Control.Monad ((>=>))
 import           Control.Monad.State.Class
 import           Control.Monad.Trans
-import           Cornelis.Agda (withCurrentBuffer, runIOTCM, withAgda, getAgda)
+import           Cornelis.Agda (withCurrentBuffer, runIOTCM, withAgda, getAgda, stopAgda)
 import           Cornelis.Diff (resetDiff, recordUpdate, Replace(..), Colline(..), Vallee(..))
 import           Cornelis.Goals
 import           Cornelis.Highlighting (getExtmarks, highlightInterval, updateLineIntervals)
-import           Cornelis.InfoWin (showInfoWindow, closeInfoWindows)
+import           Cornelis.InfoWin (showInfoWindow, closeInfoWindows, disposeInfoBuffer)
 import           Cornelis.Offsets
 import           Cornelis.Pretty (prettyGoals, HighlightGroup (CornelisHole))
 import           Cornelis.Types
@@ -32,7 +32,6 @@ import qualified Data.Vector as V
 import           Neovim
 import           Neovim.API.Text
 import           Neovim.User.Input (input)
-import           System.Process (terminateProcess)
 import           Text.Read (readMaybe)
 
 
@@ -117,17 +116,38 @@ doAllGoals = const allGoals
 
 
 allGoals :: Neovim CornelisEnv ()
-allGoals =
-  withAgda $ withCurrentBuffer $ \b ->
-    withBufferStuff b $ \bs -> do
-      goalWindow b $ bs_goals bs
+allGoals = withAgda $ withCurrentBuffer $ \b -> do
+  agda <- getAgda b
+  -- Ask Agda for the current metas instead of relying only on the last load
+  -- response.  In particular, --allow-unsolved-metas may report goals as
+  -- invisible metas rather than interaction points.
+  mode <- normalizationMode
+  runIOTCM (Cmd_metas mode) agda
 
 
 doRestart :: CommandArguments -> Neovim CornelisEnv ()
 doRestart _ = do
   bs <- gets cs_buffers
   modify $ #cs_buffers .~ mempty
-  liftIO $ for_ bs $ terminateProcess . a_hdl . bs_agda_proc
+  for_ bs $ \bufferStuff -> do
+    disposeInfoBuffer bufferStuff
+    liftIO $ stopAgda $ bs_agda_proc bufferStuff
+
+
+-- | Release everything owned by a buffer when Neovim unloads it.  The buffer
+-- number is retained in 'BufferStuff' because the callback may run after the
+-- Neovim buffer handle has become invalid.
+detachBuffer :: BufferNum -> Neovim CornelisEnv ()
+detachBuffer bufferNum = do
+  buffers <- gets cs_buffers
+  let (detached, remaining) =
+        M.partition ((== bufferNum) . bs_buffer_num) buffers
+  modify' $ \state -> state
+    & #cs_buffers .~ remaining
+    & #cs_diff %~ M.delete bufferNum
+  for_ detached $ \bufferStuff -> do
+    disposeInfoBuffer bufferStuff
+    liftIO $ stopAgda $ bs_agda_proc bufferStuff
 
 doAbort :: CommandArguments -> Neovim CornelisEnv ()
 doAbort _ = withAgda $ withCurrentBuffer $ getAgda >=> runIOTCM Cmd_abort

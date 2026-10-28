@@ -1,15 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Cornelis.InfoWin (closeInfoWindows, showInfoWindow, buildInfoBuffer) where
+module Cornelis.InfoWin (closeInfoWindows, closeInfoWindowForBuffer, disposeInfoBuffer, showInfoWindow, buildInfoBuffer) where
 
 import           Prelude hiding (Left, Right)
-import           Control.Monad (unless)
+import           Control.Monad (unless, when)
 import           Control.Monad.State.Class
 import           Cornelis.Pretty
 import           Cornelis.Types
 import           Cornelis.Utils (withBufferStuff, windowsForBuffer, savingCurrentWindow, visibleBuffers)
-import           Data.Foldable (for_)
+import           Data.Foldable (asum, for_)
 import qualified Data.Map as M
+import           Data.Maybe (listToMaybe)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import           Data.Traversable (for)
@@ -19,18 +20,6 @@ import           Neovim.API.Text
 import           Prettyprinter (layoutPretty, LayoutOptions (LayoutOptions), PageWidth (AvailablePerLine))
 import           Prettyprinter.Render.Text (renderStrict)
 
-
-cornelisWindowVar :: Text
-cornelisWindowVar = "cornelis_window"
-
-getBufferVariableOfWindow :: NvimObject o => Text -> Window -> Neovim env (Maybe o)
-getBufferVariableOfWindow variableName window = do
-  window_is_valid window >>= \case
-    False -> pure Nothing
-    True -> do
-      buffer <- window_get_buffer window
-      let getVariableValue = Just . fromObjectUnsafe <$> buffer_get_var buffer variableName
-      getVariableValue `catchNeovimException` const (pure Nothing)
 
 closeInfoWindowsForUnseenBuffers :: Neovim CornelisEnv ()
 closeInfoWindowsForUnseenBuffers = do
@@ -43,12 +32,11 @@ closeInfoWindowsForUnseenBuffers = do
       ws <- windowsForBuffer $ iw_buffer $ bs_info_win bs
       for_ ws $ flip nvim_win_close True
 
-closeInfoWindows :: Neovim env ()
+-- Close only info windows backed by buffers created by this Cornelis instance.
+closeInfoWindows :: Neovim CornelisEnv ()
 closeInfoWindows = do
-  ws <- vim_get_windows
-  for_ ws $ \w -> getBufferVariableOfWindow cornelisWindowVar w >>= \case
-    Just True -> nvim_win_close w True
-    _ -> pure ()
+  bufs <- gets cs_buffers
+  for_ bufs closeInfoWindowForBuffer
 
 
 closeInfoWindowForBuffer :: BufferStuff -> Neovim CornelisEnv ()
@@ -56,6 +44,14 @@ closeInfoWindowForBuffer bs = do
   let InfoBuffer ib = bs_info_win bs
   ws <- windowsForBuffer ib
   for_ ws $ flip nvim_win_close True
+
+
+disposeInfoBuffer :: BufferStuff -> Neovim CornelisEnv ()
+disposeInfoBuffer bs = do
+  closeInfoWindowForBuffer bs
+  let InfoBuffer ib = bs_info_win bs
+  valid <- nvim_buf_is_valid ib
+  when valid $ nvim_buf_delete ib M.empty
 
 
 
@@ -93,7 +89,6 @@ buildInfoBuffer = do
     nvim_create_buf False True
 
   -- Setup things in the buffer
-  void $ buffer_set_var b cornelisWindowVar $ ObjectBool True
   nvim_buf_set_option b "modifiable" $ ObjectBool False
   nvim_buf_set_option b "filetype" $ ObjectString "agdainfo"
   pure $ InfoBuffer b
@@ -127,15 +122,33 @@ buildInfoWindow (InfoBuffer split_buf) w = savingCurrentWindow $ do
 resizeInfoWin :: Window -> InfoBuffer -> Neovim CornelisEnv ()
 resizeInfoWin w ib = do
   t <- nvim_buf_get_lines (iw_buffer ib) 0 (-1) False
-  max_size <- asks $ cc_max_height . ce_config
-  let size = min max_size $ fromIntegral $ V.length t
-  asks (cc_split_location . ce_config) >>= \case
-    Vertical   -> pure ()
-    Horizontal -> window_set_height w size
-    OnLeft     -> pure ()
-    OnRight    -> pure ()
-    OnTop      -> window_set_height w size
-    OnBottom   -> window_set_height w size
+  maxHeight <- asks $ cc_max_height . ce_config
+  maxWidth <- asks $ cc_max_width . ce_config
+  orientation <- infoWindowOrientation w
+  case orientation of
+    Just Horizontal -> window_set_height w $ min maxHeight $ fromIntegral $ V.length t
+    Just Vertical -> window_set_width w maxWidth
+    _ -> pure ()
+
+
+infoWindowOrientation :: Window -> Neovim env (Maybe SplitLocation)
+infoWindowOrientation w = do
+  winNumber <- nvim_win_get_number w
+  winId <- vim_call_function "win_getid" $ V.singleton $ toObject winNumber
+  layout <- vim_eval "winlayout()"
+  pure $ listToMaybe . reverse =<< layoutPath winId layout
+
+
+layoutPath :: Object -> Object -> Maybe [SplitLocation]
+layoutPath target (ObjectArray [ObjectString "leaf", winId])
+  | target == winId = Just []
+layoutPath target (ObjectArray [ObjectString direction, ObjectArray children]) = do
+  orientation <- case direction of
+    "col" -> Just Horizontal
+    "row" -> Just Vertical
+    _ -> Nothing
+  (orientation :) <$> asum (layoutPath target <$> children)
+layoutPath _ _ = Nothing
 
 
 
@@ -159,4 +172,3 @@ writeInfoBuffer ns iw doc = do
       (T.pack $ show hg)
       l sc ec
   nvim_buf_set_option b "modifiable" $ ObjectBool False
-

@@ -50,6 +50,9 @@ respond :: Buffer -> Response -> Neovim CornelisEnv ()
 -- Update the buffer's goal map
 respond b (DisplayInfo dp) = do
   respondToHelperFunction dp
+  case dp of
+    AllGoalsWarnings [] [] [] [] -> reportInfo "All done"
+    _ -> pure ()
   when (dp & hasn't #_GoalSpecific) $
     modifyBufferStuff b $ #bs_goals .~ dp
   goalWindow b dp
@@ -68,7 +71,8 @@ respond b (GiveAction result ip) = do
     Nothing -> reportError $ T.pack $ "Can't find interaction point " <> show i
     Just ip' -> do
       int <- getIpInterval b ip'
-      replaceInterval b int $ replaceQuestion result
+      contents <- getGoalContents b ip'
+      replaceInterval b int $ replaceQuestion $ giveText29 contents result
   load
 -- Replace the interaction point with a result
 respond b (SolveAll solutions) = do
@@ -79,6 +83,7 @@ respond b (SolveAll solutions) = do
         int <- getIpInterval b ip
         replaceInterval b int $ replaceQuestion ex
   load
+
 respond b ClearHighlighting = do
   -- delete what we know about goto positions and stored extmarks
   modifyBufferStuff b $ \bs -> bs
@@ -106,9 +111,18 @@ respond b (JumpToError _ pos) = do
       Nothing -> reportError "invalid error report from Agda"
       Just (Pos l c) -> do
         ws <- fmap listToMaybe $ windowsForBuffer b
-        for_ ws $ flip window_set_cursor (fromOneIndexed (oneIndex l), fromZeroIndexed c)
+        for_ ws $ \w -> savingCurrentWindow $ do
+          nvim_set_current_win w
+          -- API cursor moves do not update the jumplist themselves.
+          vim_command "normal! m'"
+          window_set_cursor w (fromOneIndexed (oneIndex l), fromZeroIndexed c)
 respond _ Status{} = pure ()
 respond _ (Unknown k _) = reportError k
+
+giveText29 :: Text -> Agda29GiveResult -> Text
+giveText29 _ (GiveStr result) = result
+giveText29 contents (GiveParen29 True) = "(" <> contents <> ")"
+giveText29 contents (GiveParen29 False) = contents
 
 {-# HLINT ignore doMakeCase "Functor law" #-}
 doMakeCase :: Buffer -> MakeCase -> Neovim CornelisEnv ()
@@ -177,7 +191,8 @@ cornelisInit = do
     neovimAsync $ do
       forever $ reportExceptions $ do
         AgdaResp buffer next <- liftIO $ readChan outchan
-        void $ reportExceptions $ respond buffer next
+        attached <- gets $ M.member buffer . cs_buffers
+        when attached $ void $ reportExceptions $ respond buffer next
   pure env
 
 
@@ -192,7 +207,6 @@ main = neovim defaultConfig { plugins = [cornelis] }
 cornelis :: Neovim () NeovimPlugin
 cornelis = do
   env <- cornelisInit
-  closeInfoWindows
 
   let rw_complete = CmdComplete "custom,InternalCornelisRewriteModeCompletion"
       cm_complete = CmdComplete "custom,InternalCornelisComputeModeCompletion"
@@ -230,6 +244,6 @@ cornelis = do
         , $(function "InternalCornelisComputeModeCompletion" 'computeModeCompletion) Sync
         , $(function "InternalCornelisDebugCommandCompletion" 'debugCommandCompletion) Sync
         , $(function "InternalCornelisNotifyEdit" 'notifyEdit) Async
+        , $(function "InternalCornelisDetach" 'detachBuffer) Sync
         ]
     }
-

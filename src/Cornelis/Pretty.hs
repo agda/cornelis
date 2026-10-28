@@ -155,9 +155,12 @@ prettyGoals (AllGoalsWarnings vis invis errs warns) =
         prettyGoal (fmap np_name gi)
           <+> maybe mempty (brackets . ("at" <+>) . prettyInterval) (np_interval $ gi_ip gi)
     ]
-prettyGoals (GoalSpecific _ scoped ty mhave mboundary mconstraints) =
-  vcat $ intersperse (stimes @_ @Int 60 "—") $
+prettyGoals (GoalSpecific _ scoped ty mhave mboundary mboundaryActual mconstraints) =
+  vcat $ intersperse (stimes @_ @Int 60 "—") $ filter (not . isEmpty) $
     [ section "Boundary" (fromMaybe [] mboundary) pretty
+    ] <>
+    [ section "Boundary (actual)" boundaryActual pretty
+    | boundaryActual <- maybeToList mboundaryActual
     ] <>
     [ annotate CornelisTitle "Goal:" <+> prettyType ty
     ] <>
